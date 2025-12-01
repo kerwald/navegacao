@@ -31,10 +31,46 @@ Agente agente{ -1, -1 };
 Final final{ -1, -1 };
 Celula map[COLS][ROWS];
 
+// --- Função auxiliar para converter 0-255 para o formato do P8G ---
+void cor(int r, int g, int b) {
+    p8g::fill(r / 255.0, g / 255.0, b / 255.0);
+}
 
+void p8g::draw() {
+    
+    p8g::background(0.9); 
 
+    for (int i = 0; i < COLS; i++) {
+        for (int j = 0; j < ROWS; j++) {
+            
+            switch (map[i][j]) {
+                case LIVRE:
+                    // Branco Gelo
+                    fill(245, 245, 245); 
+                    break;
 
-void p8g::draw() {}
+                case OCUPADO:
+                    // Cinza Escuro Moderno
+                    fill(50, 50, 60); 
+                    break;
+
+                case INICIAL:
+                    // LARANJA 
+                    fill(255, 128, 0); 
+                    break;
+
+                case FINAL:
+                    // AZUL ROYAL
+                    fill(65, 105, 225); 
+                    break;
+            }
+
+            p8g::stroke(200 / 255.0); // Borda cinza suave
+            p8g::rect(i * CELL_SIZE, j * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        }
+    }
+}
+
 void p8g::keyPressed() {}
 void p8g::keyReleased() {}
 void p8g::mouseMoved() {}
@@ -84,15 +120,15 @@ void p8g::mouseWheel( float delta ) {}
 
 int main() {
 
-    {
-        using namespace p8g;
-        run( SCREEN_W, SCREEN_H, "Navegacao", true );
-    }
-
     for( int i=0; i<COLS; i++ ){
         for( int j=0; j<ROWS; j++ ){
             map[i][j] = LIVRE;
         }
+    }
+
+    {
+        using namespace p8g;
+        run( SCREEN_W, SCREEN_H, "Navegacao", true );
     }
 
     return 0;

@@ -1,0 +1,7 @@
+
+*.o
+*.exe
+*.d
+
+p8g/
+.vscode/

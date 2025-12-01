@@ -117,26 +117,20 @@ void recalcularRota() {
 }
 
 void p8g::draw() {
-    using namespace p8g; // Para não precisar digitar p8g:: toda hora
 
     background(0.9); 
 
-    // 1. Lógica de Movimento (Animação)
-    // Se existe um caminho e ainda não chegamos no fim
+    // Lógica de Movimento (Animação)
     if (!agente.caminho.empty() && agente.indiceCaminho < agente.caminho.size()) {
-        // Incrementa o tempo (assumindo 60fps, soma ~0.016 por frame)
-        // Se p8g::deltaTime estiver disponível, use: agente.tempoMovimento += p8g::deltaTime;
+
         agente.tempoMovimento += 1.0f / 60.0f; 
 
-        // A cada 0.1 segundos (ou ajuste para ser mais lento/rápido), dá um passo
         if (agente.tempoMovimento > 0.1f) {
             Ponto proximoPasso = agente.caminho[agente.indiceCaminho];
-            
-            // Tira o status de INICIAL da célula antiga para limpar o rastro laranja (opcional)
+
             if(map[agente.col][agente.row] == INICIAL) {
                  map[agente.col][agente.row] = LIVRE;
             }
-
             // Move o agente
             agente.col = proximoPasso.x;
             agente.row = proximoPasso.y;
@@ -149,7 +143,7 @@ void p8g::draw() {
         }
     }
 
-    // 2. Desenho do Grid
+
     for (int i = 0; i < COLS; i++) {
         for (int j = 0; j < ROWS; j++) {
             
@@ -164,20 +158,18 @@ void p8g::draw() {
         }
     }
 
-    // 3. Desenho do Caminho (Visualização do trajeto futuro)
+  
     if (!agente.caminho.empty()) {
-        fill(255, 255, 0, 100); // Amarelo com transparência (se a lib suportar alpha) ou apenas RGB
-        // Se a lib não suportar alpha no fill, use fill(255, 255, 200);
+        fill(255, 255, 0, 100); // Amarelo com transparência 
         
         for (const auto& p : agente.caminho) {
-            // Não desenha em cima do final para manter o azul
             if (p.x == final.col && p.y == final.row) continue;
             
             rect(p.x * CELL_SIZE + 5, p.y * CELL_SIZE + 5, CELL_SIZE - 10, CELL_SIZE - 10);
         }
     }
 
-    // 4. Desenho do Agente (Círculo sobreposto)
+    // Desenho do Agente (Círculo sobreposto)
     if (agente.col != -1 && agente.row != -1) {
         fill(0, 0, 0); // Preto ou cor de destaque
         float cx = agente.col * CELL_SIZE + CELL_SIZE / 2.0f;

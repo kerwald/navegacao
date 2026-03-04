@@ -9,83 +9,108 @@
 
 using namespace p8g;
 
-class Agente{
+enum class tipoCelula : uint8_t { 
+    OBSTACULO, VAZIO
+};
+
+
+class Agente {
     private:
-        std::pair<int, int> posicaoInicial;
+        std::pair<int, int> posicaoAtual;
         std::pair<int, int> posicaoFinal;
     public:
-        Agente( const int x, const int y ) : posicaoInicial( x, y ), posicaoFinal( -1, -1 ) 
-        {}
-        Agente() : posicaoInicial( -1, -1 ), posicaoFinal( -1, -1 ) 
-        {}
-        std::pair<int, int> getInicio(){
-            return posicaoInicial;
+        Agente( ) : posicaoAtual( -1, -1 ), posicaoFinal( -1, -1 ) {}
+        Agente( const std::pair<int, int> posicaoAtual, const std::pair<int, int> posicaoFinal ) : posicaoAtual( posicaoAtual ), posicaoFinal( posicaoFinal) {}
+
+        std::pair<int, int> getPosicaoAtual() const{
+            return posicaoAtual;
         }
-        void setPosicaoInicial( std::pair<int, int> posicaoInicial ){
-            this->posicaoInicial = posicaoInicial;
+        void setPosicaoAtual( std::pair<int, int> posicaoAtual ){
+            this->posicaoAtual = posicaoAtual;
         }
-        std::pair<int, int> getPosicaoFinal(){
+        std::pair<int, int> getPosicaoFinal() const{
             return posicaoFinal;
         }
-        void setPosicaoFinal( std::pair<int, int> posicaoFinal ){
-            this->posicaoFinal = posicaoFinal;
+
+};
+
+class Celula{
+
+    private:
+        tipoCelula tipo;
+
+    public:
+        Celula() : tipo( tipoCelula::VAZIO ){};
+        Celula( tipoCelula tipo  ) : tipo( tipo ) {};
+
+        void alterarTipo( tipoCelula tipo ){
+            this->tipo = tipo;
+        }
+        tipoCelula getTipo( ){
+            return tipo;
         }
 
 };
 
-struct Celula{
-    Agente agente;
-    bool isFree;
-    Celula( Agente agente  ) : agente( agente ), isFree( false ) {};
-    Celula() : isFree( true ) {};
-    Agente getAgente(){
-        return agente;
-    }
-    bool getIsFree(){
-        return isFree;
-    }
-};
 
 class Navegacao{
     private:
-        const int coluna;
-        const int linha;
+        const int tamColuna;
+        const int tamLinha;
         std::vector< std::vector<Celula> > grid;
+        std::vector<Agente> agentes;
     public:
-        Navegacao( ) : coluna( LARGURA/TAMANHOCELULA), linha( ALTURA/TAMANHOCELULA) {
-            grid.resize( linha, std::vector<Celula>( coluna ) );
+        Navegacao( ) : tamColuna( LARGURA/TAMANHOCELULA), tamLinha( ALTURA/TAMANHOCELULA) {
+            grid.resize( tamLinha, std::vector<Celula>( tamColuna ) );
         };
 
         bool isValide( int x, int y ){
 
-            if( x >= 0 && x <  linha && y >= 0 && y < coluna ){
+            if( y >= 0 && y <  tamLinha && x >= 0 && x < tamColuna ){
                 return true;
             } else{
                 return false;
             }
 
         }
-        int getLinha(){
-            return linha;
+
+        int getTamLinha(){
+            return tamLinha;
         }
-        int getColuna(){
-            return coluna;
+
+        int getTamColuna(){
+            return tamColuna;
         }
-        Celula getCelula( const int x, const int y ){
-            Celula celula = grid[x][y];
-            return celula;
+        std::vector<Agente> getAgentes(){
+            return agentes;
         }
-        bool adicionarAgente( const int posicaoX, const int posicaoY ){
-            if( this->isValide( posicaoX, posicaoY ) &&  this->getCelula( posicaoX, posicaoY ).getIsFree() ) {
-                Agente agente{ posicaoX, posicaoY };
-                Celula celula{ agente };
-                grid[posicaoX][posicaoY] = celula;
+
+        bool temAgente( std::pair<int, int> posicao ){
+            for( const auto& agente : agentes ){
+                if( agente.getPosicaoAtual() == posicao || agente.getPosicaoFinal() == posicao ){
+                    return true;
+                }
+            }
+            return false;
+        }
+ 
+
+        void adicionarAgente( const std::pair<int, int> origem, const std::pair<int, int> destino ){
+
+            if( this->isValide( origem.first, origem.second ) && this->isValide( destino.first, destino.second ) &&  this->grid[ origem.second ][ origem.first ].getTipo() == tipoCelula::VAZIO && this->grid[ destino.second ][ destino.first ].getTipo() == tipoCelula::VAZIO) {
+                Agente agente{ origem, destino };
+                agentes.push_back( agente );
+            }
+
+        }
+
+        void adicionarParede( const std::pair<int, int> posicao ){
+            if ( !this->temAgente( posicao ) && grid[posicao.second][posicao.first].getTipo() == tipoCelula::VAZIO ){
+                grid[ posicao.second ][ posicao.first ].alterarTipo( tipoCelula::OBSTACULO );
             }
         }
-        bool adicionarPosicaoFinal( const std::pair<int, int> origem, const std::pair<int, int> destino ){
-       
-            grid[ origem.first ][ origem.second ].agente.setPosicaoFinal( destino );
-
+        Celula& getCelula( std::pair<int, int> posicao ){
+            return grid[ posicao.second ][ posicao.first ];
         }
 
 
@@ -98,45 +123,71 @@ int atualY = -1;
 
 void p8g::draw() {
     background(220);
-    bool color = false;
-    for( int i=0; i<navegacaoptr->getLinha(); i++ ){
-        for( int j=0; j<navegacaoptr->getColuna(); j++ ){
-            if( color == false ){
+    for( int i=0; i<navegacaoptr->getTamLinha(); i++ ){
+        for( int j=0; j<navegacaoptr->getTamColuna(); j++ ){
+            if( navegacaoptr->getCelula( std::pair<int, int> {j, i}).getTipo() == tipoCelula::OBSTACULO ){
                 fill(255, 0, 255);
-                color = true;
             } else{
                 fill(255, 0, 0);
-                color = false;
             }
             int posicaox = TAMANHOCELULA * j;
             int posicaoj = TAMANHOCELULA * i;
             rect( posicaox, posicaoj, TAMANHOCELULA, TAMANHOCELULA );
-            if( navegacaoptr->getCelula( i, j ).getIsFree() == false  ){
-                fill(255, 255, 0);
-                ellipse( posicaox + 30, posicaoj + 30, 25, 25 );
-            }
         }
     }
+    for( const auto& agente : navegacaoptr->getAgentes() ){
+        std::pair<int, int> posicaoAtual = agente.getPosicaoAtual();
+        int posicaoX = TAMANHOCELULA * posicaoAtual.first;
+        int posicaoY = TAMANHOCELULA * posicaoAtual.second;
+
+        fill(255, 255, 0);
+        ellipse( posicaoX + 30, posicaoY + 30, 25, 25 ); 
+
+        std::pair<int, int> posicaoFinal = agente.getPosicaoFinal();
+        posicaoX = TAMANHOCELULA * posicaoFinal.first;
+        posicaoY = TAMANHOCELULA * posicaoFinal.second;
+
+        fill(255, 10, 50);
+        ellipse( posicaoX + 30, posicaoY + 30, 25, 25 ); 
+        
+    }
 }
 
-void p8g::keyPressed() {}
-void p8g::keyReleased() {}
-void p8g::mouseMoved() {}
-void p8g::mousePressed() {
+void p8g::keyPressed() {
 
-    if( ctrl == 0 ){
+    switch ( keyCode )
+    {
+    case 79:
+        /* O */
+
         atualX = mouseX/TAMANHOCELULA;
         atualY = mouseY/TAMANHOCELULA;
-        navegacaoptr->adicionarAgente( atualX, atualY );
-        ctrl++;
-    } else if( ctrl == 1 ){
-        std::pair<int, int> inicial( atualX, atualY );
-        std::pair<int, int> final( mouseX/TAMANHOCELULA, mouseY/TAMANHOCELULA );
-        navegacaoptr->adicionarPosicaoFinal( inicial, final );
-        ctrl = 0;
+        navegacaoptr->adicionarParede( std::pair<int, int> { atualX, atualY } ); 
+        
+        break;
+    case 65:
+        /* A */
+        if( ctrl == 0 ){
+            atualX = mouseX/TAMANHOCELULA;
+            atualY = mouseY/TAMANHOCELULA;
+            ctrl++;
+            break;
+        } else if( ctrl >= 1 ){
+            std::pair<int, int> inicial( atualX, atualY );
+            std::pair<int, int> final( mouseX/TAMANHOCELULA, mouseY/TAMANHOCELULA );
+            navegacaoptr->adicionarAgente( inicial, final );
+            ctrl = 0;
+            break;
+        }
+    default:
+        break;
     }
 
 }
+
+void p8g::keyReleased() {}
+void p8g::mouseMoved() {}
+void p8g::mousePressed() {}
 void p8g::mouseReleased() {}
 void p8g::mouseWheel( float delta ) {}
 

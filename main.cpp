@@ -5,6 +5,7 @@
 #include <queue>
 #include <map>
 #include <algorithm>
+#include <random>
 
 #define LARGURA 1280
 #define ALTURA 720
@@ -22,7 +23,7 @@ class Agente {
         std::pair<int, int> posicaoAtual;
         std::pair<int, int> posicaoFinal;
         std::vector< std::pair <int, int> > caminho;
-        int indice;
+        size_t indice;
 
     public:
         Agente( const std::pair<int, int> posicaoAtual, const std::pair<int, int> posicaoFinal, std::vector<std::pair<int, int>> caminho ) : posicaoAtual( posicaoAtual ), posicaoFinal( posicaoFinal), caminho( caminho ), indice( 0 ) {}
@@ -40,8 +41,10 @@ class Agente {
             return caminho;
         }
         void avancaPosicao(){
-            indice++;
-            posicaoAtual = caminho[ indice ];
+            if( indice + 1 < caminho.size() ){
+                indice++;
+                posicaoAtual = caminho[ indice ];
+            }
         }
 
 };
@@ -93,7 +96,7 @@ class Navegacao{
         int getTamColuna(){
             return tamColuna;
         }
-        std::vector<Agente> getAgentes(){
+        std::vector<Agente>& getAgentes(){
             return agentes;
         }
 
@@ -107,13 +110,35 @@ class Navegacao{
         }
  
 
-        void adicionarAgente( const std::pair<int, int> origem, const std::pair<int, int> destino ){
+        bool adicionarAgente( const std::pair<int, int> origem, const std::pair<int, int> destino ){
 
             if( this->isValide( origem.first, origem.second ) && this->isValide( destino.first, destino.second ) &&  this->grid[ origem.second ][ origem.first ].getTipo() == tipoCelula::VAZIO && this->grid[ destino.second ][ destino.first ].getTipo() == tipoCelula::VAZIO) {
                 Agente agente{ origem, destino, calcularCaminho( origem, destino ) };
                 agentes.push_back( agente );
+                return true;
             }
+            return false;
 
+        }
+
+        void adicionarAgentes( int numeroDeAgentes ){
+
+            static std::random_device rd; 
+            static std::mt19937 gen(rd());
+
+            std::pair<int, int> origem;
+            std::pair<int, int> destino;
+            std::uniform_int_distribution<> distrLinha( 0 , tamLinha - 1 ); 
+            std::uniform_int_distribution<> distrColuna( 0 , tamColuna - 1 ); 
+            for( int i=0; i<numeroDeAgentes; i++ ){
+                bool ctrl = false;
+                while( ctrl == false){
+                    origem = { distrLinha(gen), distrColuna(gen) };
+                    destino = { distrColuna(gen), distrColuna(gen) }; 
+                    ctrl = adicionarAgente( origem, destino );
+                }
+            }
+            
         }
 
         void atualizarAgentes(){
@@ -215,7 +240,7 @@ void p8g::draw() {
             rect( posicaox, posicaoj, TAMANHOCELULA, TAMANHOCELULA );
         }
     }
-    for( const auto& agente : navegacaoptr->getAgentes() ){
+    for( auto& agente : navegacaoptr->getAgentes() ){
 
         std::pair<int, int> posicaoFinal = agente.getPosicaoFinal();
         int posicaoX = TAMANHOCELULA * posicaoFinal.first;
@@ -262,6 +287,11 @@ void p8g::keyPressed() {
             ctrl = 0;
             break;
         }
+    case 77:
+        /* M */
+        navegacaoptr->adicionarAgentes( 5 );
+        break;
+
     default:
         break;
     }

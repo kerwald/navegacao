@@ -24,9 +24,13 @@ class Agente {
         std::pair<int, int> posicaoFinal;
         std::vector< std::pair <int, int> > caminho;
         size_t indice;
+        float progresso = 0.0f;
+        float velocidade = 0.07f;
+        float visualX;
+        float visualY;
 
     public:
-        Agente( const std::pair<int, int> posicaoAtual, const std::pair<int, int> posicaoFinal, std::vector<std::pair<int, int>> caminho ) : posicaoAtual( posicaoAtual ), posicaoFinal( posicaoFinal), caminho( caminho ), indice( 0 ) {}
+        Agente( const std::pair<int, int> posicaoAtual, const std::pair<int, int> posicaoFinal, std::vector<std::pair<int, int>> caminho ) : posicaoAtual( posicaoAtual ), posicaoFinal( posicaoFinal), caminho( caminho ), indice( 0 ), visualX( (float) posicaoAtual.first ),  visualY( (float) posicaoAtual.second ) {}
 
         std::pair<int, int> getPosicaoAtual() const{
             return posicaoAtual;
@@ -40,10 +44,31 @@ class Agente {
         std::vector< std::pair <int, int> > getCaminho(){
             return caminho;
         }
-        void avancaPosicao(){
-            if( indice + 1 < caminho.size() ){
-                indice++;
-                posicaoAtual = caminho[ indice ];
+
+        std::pair< float, float> getVisual(){
+            std::pair< float, float> visual = { visualX, visualY };
+            return visual;
+        }
+
+        void atualizarPosicao() {
+            
+            if ( indice + 1 < caminho.size() ) {
+                if ( progresso >= 1.0f ) {
+                    indice++;
+                    posicaoAtual = caminho[indice];
+                    progresso = 0.0f; 
+                }
+
+                // LERP
+                std::pair<int, int> proximo = caminho[ indice + 1 ];
+                visualX = (float)posicaoAtual.first + ((float)proximo.first - (float)posicaoAtual.first) * progresso;
+                visualY = (float)posicaoAtual.second + ((float)proximo.second - (float)posicaoAtual.second) * progresso;
+
+                progresso += velocidade; 
+
+            } else {
+                visualX = (float)posicaoFinal.first;
+                visualY = (float)posicaoFinal.second;
             }
         }
 
@@ -146,7 +171,7 @@ class Navegacao{
             for( auto& agente : agentes ){
 
                 if( agente.getPosicaoAtual() != agente.getPosicaoFinal() ){
-                    agente.avancaPosicao();
+                    agente.atualizarPosicao();
                 }
 
             }
@@ -216,24 +241,20 @@ Navegacao *navegacaoptr;
 int ctrl = 0;
 int atualX = -1;
 int atualY = -1;
-int frameDelay = 20;
-int frameCount = 0;
 
 void p8g::draw() {
 
-    frameCount++;
+    navegacaoptr->atualizarAgentes();
 
-    if ( frameCount % frameDelay == 0) {
-        navegacaoptr->atualizarAgentes();
-    }
-
-    background(220);
+    background( 30, 30, 35 );
     for( int i=0; i<navegacaoptr->getTamLinha(); i++ ){
         for( int j=0; j<navegacaoptr->getTamColuna(); j++ ){
             if( navegacaoptr->getCelula( std::pair<int, int> {j, i}).getTipo() == tipoCelula::OBSTACULO ){
-                fill(255, 0, 255);
+                noStroke();
+                fill( 100, 100, 110 );
             } else{
-                fill(255, 0, 0);
+                stroke( 50 ); 
+                fill( 40, 40, 45 );
             }
             int posicaox = TAMANHOCELULA * j;
             int posicaoj = TAMANHOCELULA * i;
@@ -243,17 +264,17 @@ void p8g::draw() {
     for( auto& agente : navegacaoptr->getAgentes() ){
 
         std::pair<int, int> posicaoFinal = agente.getPosicaoFinal();
-        int posicaoX = TAMANHOCELULA * posicaoFinal.first;
-        int posicaoY = TAMANHOCELULA * posicaoFinal.second;
+        float posicaoX = TAMANHOCELULA * posicaoFinal.first;
+        float posicaoY = TAMANHOCELULA * posicaoFinal.second;
 
-        fill(255, 10, 50);
+        fill( 255, 100, 100 );
         ellipse( posicaoX + 30, posicaoY + 30, 25, 25 ); 
 
-        std::pair<int, int> posicaoAtual = agente.getPosicaoAtual();
+        std::pair<float, float> posicaoAtual = agente.getVisual();
         posicaoX = TAMANHOCELULA * posicaoAtual.first;
         posicaoY = TAMANHOCELULA * posicaoAtual.second;
 
-        fill(255, 255, 0);
+        fill( 80, 200, 120 );
         ellipse( posicaoX + 30, posicaoY + 30, 25, 25 ); 
 
     }
